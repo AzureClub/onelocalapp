@@ -113,6 +113,43 @@ module keyvault 'modules/keyvault.bicep' = {
   }
 }
 
+@description('Cognitive Services accounts to provision (one per kind). Provides billing endpoint + key for connected containers, written automatically to Key Vault.')
+param aiAccounts array = [
+  { key: 'speech', kind: 'SpeechServices', sku: 'S0' }
+  { key: 'translator', kind: 'TextTranslation', sku: 'S1' }
+  { key: 'language', kind: 'TextAnalytics', sku: 'S' }
+  { key: 'docintel', kind: 'FormRecognizer', sku: 'S0' }
+  { key: 'contentsafety', kind: 'ContentSafety', sku: 'S0' }
+]
+
+@description('Set true to provision disconnected commitment plans (requires Microsoft approval). Pair with disconnectedCommitments param.')
+param enableDisconnectedCommitment bool = false
+
+@description('Disconnected commitment plan definitions. Each: { accountIndex: <index in aiAccounts>, planType: STT|TTS|TA|TTOTEXT|FR|CS, tier: T1|T2|... }')
+param disconnectedCommitments array = []
+
+module aiAccountsModule 'modules/ai-services.bicep' = {
+  scope: rg
+  name: 'ai-accounts'
+  params: {
+    location: location
+    tags: tags
+    resourceToken: resourceToken
+    accounts: aiAccounts
+    enableDisconnectedCommitment: enableDisconnectedCommitment
+    disconnectedCommitments: disconnectedCommitments
+  }
+}
+
+module aiSecrets 'modules/ai-secrets.bicep' = {
+  scope: rg
+  name: 'ai-secrets'
+  params: {
+    keyVaultName: keyvault.outputs.name
+    accountInfos: aiAccountsModule.outputs.accountInfos
+  }
+}
+
 module cae 'modules/containerapps-env.bicep' = {
   scope: rg
   name: 'cae'
@@ -212,6 +249,9 @@ module aiContainers 'modules/containerapp-ai.bicep' = [for svc in aiServices: {
     billingEndpointSecretName: 'ai-${svc.serviceKey}-billing'
     appIdentityResourceId: identity.outputs.appIdentityResourceId
   }
+  dependsOn: [
+    aiSecrets
+  ]
 }]
 
 module api 'modules/containerapp-api.bicep' = {
@@ -277,3 +317,4 @@ output AI_CONTAINER_FQDNS array = [for (svc, i) in aiServices: {
   name: svc.name
   fqdn: aiContainers[i].outputs.fqdn
 }]
+output AI_ACCOUNT_ENDPOINTS array = aiAccountsModule.outputs.accountInfos

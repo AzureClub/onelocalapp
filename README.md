@@ -21,7 +21,24 @@ azd env set AZURE_LOCATION westeurope
 azd up
 ```
 
-`azd up` wykona: `provision` (Bicep) → seed Key Vault placeholders → konfiguracja Entra App Registration + EasyAuth → `deploy` (build images → ACR → Container Apps).
+`azd up` wykona: `provision` (Bicep) → utworzenie 5 Azure AI Services accounts (Speech, Translator, Language, DocIntel, ContentSafety) → automatyczny zapis kluczy i billing endpointów do Key Vault → konfiguracja Entra App Registration + EasyAuth → `deploy` (build images → ACR → Container Apps).
+
+### Disconnected commitment plans (opcjonalne)
+
+Disconnected containers wymagają **commitment plan** w Cognitive Services account. To wymaga zatwierdzenia przez Microsoft ([request access form](https://aka.ms/csdisconnectedcontainers)). Po otrzymaniu approval:
+
+```bash
+azd env set ENABLE_DISCONNECTED_COMMITMENT true
+```
+
+I edytuj `infra/main.parameters.json` aby dodać `disconnectedCommitments`, np:
+```json
+"disconnectedCommitments": { "value": [
+  { "accountIndex": 0, "planType": "STT", "tier": "T1" },
+  { "accountIndex": 1, "planType": "TTOTEXT", "tier": "T1" }
+]}
+```
+`accountIndex` to indeks w `aiAccounts` (0=speech, 1=translator, 2=language, 3=docintel, 4=contentsafety).
 
 ## Tryb connected ↔ disconnected
 
