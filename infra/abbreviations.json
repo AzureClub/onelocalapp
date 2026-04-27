@@ -1,0 +1,13 @@
+{
+  "resourcesResourceGroups": "rg-",
+  "containerRegistryRegistries": "cr",
+  "keyVaultVaults": "kv-",
+  "storageStorageAccounts": "st",
+  "documentDBDatabaseAccounts": "cosmos-",
+  "operationalInsightsWorkspaces": "log-",
+  "insightsComponents": "appi-",
+  "appManagedEnvironments": "cae-",
+  "managedIdentityUserAssignedIdentities": "id-",
+  "networkVirtualNetworks": "vnet-",
+  "networkPrivateEndpoints": "pe-"
+}
